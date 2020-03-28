@@ -1,12 +1,15 @@
 import React, {useEffect, useState} from 'react';
-import {StyleSheet, Image, View, Text} from 'react-native';
+import {StyleSheet, Image, View, Text, TextInput, TouchableOpacity} from 'react-native';
 import MapView, {Marker, Callout} from 'react-native-maps';
 import { requestPermissionsAsync, getCurrentPositionAsync } from "expo-location";
+import {MaterialIcons} from '@expo/vector-icons';
 
+import api from "../services/api";
 
 function Main({ navigation }) {
+    const [devs, setDevs] = useState([])
     const [currentRegion, setCurrentRegion] = useState(null);
-
+        
     useEffect(()=>{
         async function loadInitialLocation() {
             const {granted} = await requestPermissionsAsync();
@@ -26,28 +29,69 @@ function Main({ navigation }) {
 
         loadInitialLocation();
     }, []);
+    
+    async function loadDevs() {
+        const {latitude, longitude} = currentRegion;
+        const response = await api.get("/search", {
+            params: {
+                latitude,
+                longitude,
+                techs: 'ReactJS'
+            }
+        });
 
-    if (!currentRegion) {
-        return null;
+        setDevs(response.data);
+    }
+    
+    function handleRegionChanged(region) {
+        console.log(region);
+        setCurrentRegion(region);
     }
 
-    return (
-        <MapView style={styles.map} initialRegion={currentRegion}>
-            <Marker coordinate={{ latitude: -22.8230793, longitude: -43.2869129}}>
-                <Image style={styles.avatar} source={{ uri:'https://avatars0.githubusercontent.com/u/41070501?s=460&u=32770585e48879a0900b6d38d7f85949c5543a2e&v=4' }} />
+    if (!currentRegion) { return null; }
 
-                <Callout onPress={()=>{
-                    // Navegação
-                    navigation.navigate('Profile', { github_username: 'brunograna' });
-                }}>
-                    <View style={styles.callout}>
-                        <Text style={styles.devName}>Bruno Garcia</Text>
-                        <Text style={styles.devBio}>Analista de Sistemas</Text>
-                        <Text style={styles.devTechs}>Java, NodeJs</Text>
-                    </View>
-                </Callout>
-            </Marker>
-        </MapView>
+    return (
+        <>
+            <MapView
+                style={styles.map}
+                 onRegionChangeComplete={handleRegionChanged}
+                 initialRegion={currentRegion}
+            >
+                <Marker
+                    coordinate={
+                        {
+                            latitude: -22.8230793,
+                            longitude: -43.2869129
+                        }
+                    }
+                >
+                    <Image style={styles.avatar} source={{ uri:'https://avatars0.githubusercontent.com/u/41070501?s=460&u=32770585e48879a0900b6d38d7f85949c5543a2e&v=4' }} />
+
+                    <Callout onPress={()=>{
+                        // Navegação
+                        navigation.navigate('Profile', { github_username: 'brunograna' });
+                    }}>
+                        <View style={styles.callout}>
+                            <Text style={styles.devName}>Bruno Garcia</Text>
+                            <Text style={styles.devBio}>Analista de Sistemas</Text>
+                            <Text style={styles.devTechs}>Java, NodeJs</Text>
+                        </View>
+                    </Callout>
+                </Marker>
+            </MapView>
+            <View style={styles.searchForm}>
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Buscar devs por techs..."
+                    placeholderTextColor="#999"
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                />
+                <TouchableOpacity onPress={()=>{}} style={styles.loadButton}>
+                    <MaterialIcons name="my-location" size={20} color="#fff" />
+                </TouchableOpacity>
+            </View>
+        </>
     );
 }
 
@@ -76,6 +120,40 @@ const styles = StyleSheet.create({
     devTechs: {
         marginTop: 5
     },
+    searchForm: {
+        position: 'absolute',
+        top: 20,
+        left: 20,
+        right: 20,
+        zIndex: 5,
+        flexDirection: 'row',
+    },
+    searchInput: {
+        flex: 1,
+        height: 50,
+        backgroundColor: '#fff',
+        color: '#333',
+        borderRadius: 25,
+        paddingHorizontal: 20,
+        fontSize: 16,
+        shadowColor: '#000',
+        shadowOpacity: 0.2,
+        shadowOffset: {
+            width: 4,
+            height: 4,
+        },
+        elevation: 3
+    },
+    loadButton: {
+        width: 50,
+        height: 50,
+        backgroundColor: '#8E4DFF',
+        borderRadius: 25,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: 15,
+    }
+
 
 });
 
